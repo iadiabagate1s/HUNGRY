@@ -16,6 +16,15 @@
 		
 		},
 		{
+			"first_name": "mac",
+			"last_name":"cheese",
+			"email": "mc@gmail.com",
+			"password": "mc123",
+			"admin": true
+			
+			
+			},
+		{
 			"first_name": "load",
 			"last_name":"itup",
 			"email": "loadit@gmail.com",

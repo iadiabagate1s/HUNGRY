@@ -9,8 +9,8 @@ import (
 "github.com/gin-gonic/gin"
 "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	// "go.mongodb.org/mongo-driver/mongo/options"
+	// "go.mongodb.org/mongo-driver/mongo/readpref"
 	// "golang.org/x/crypto/bcrypt"
 
 )
@@ -44,12 +44,9 @@ type UserRes struct {
 
 
 
-func Signinuser_post() gin.HandlerFunc{
+func Signinuser_post(DB *mongo.Client, ctx context.Context, err error) gin.HandlerFunc{
 
 	
-
-
-
 
 
 
@@ -61,40 +58,32 @@ func Signinuser_post() gin.HandlerFunc{
 
 		// Get the user fields from the request and bind them to a user struct
 		var user User
-		
 		c.BindJSON(&user)
-
+		//create a slice of user profile
 		var userpp []UserProfile
+
+	
+	//connect to database and find the collection by email
+	dbobj := DB.Database("HUNGRY")
+	fmt.Println("inside sign in user obj",dbobj, reflect.TypeOf(dbobj), user.Email)
+	userobj := dbobj.Collection(user.Email)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(
-	   "mongodb+srv://HUNGRY2021:HUNGRY2021@cluster0.ntcly.mongodb.net/Cluster0?retryWrites=true&w=majority",
-	))
-	if err != nil { log.Fatal(err) }
-	
-	err=client.Ping(ctx,readpref.Primary() )
-	fmt.Println("db connected in signin")
-	databases, err:= client.ListDatabaseNames(ctx, bson.M{})
-	
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("inside create****",databases)
-	dbobj := client.Database("HUNGRY")
-	fmt.Println("inside sign in user obj",dbobj, reflect.TypeOf(dbobj), user.Email)
-
-	userobj := dbobj.Collection(user.Email)
+	//once thats found return all data inside the collection
 	cursor , err := userobj.Find(ctx, bson.M{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer cursor.Close(ctx)
+	//decrypting binary json
 	for cursor.Next(ctx) {
 		var userp UserProfile
 		cursor.Decode(&userp)
+		//append data  obj to slice made earlier
 		userpp = append(userpp, userp)
 	}
-	newpass := userpp[0].Password
+	//get saved hashed password
+	savedhashedpass := userpp[0].Password
 	fmt.Println("inside sign in user obj*****",userpp, reflect.TypeOf(userpp), userpp[0].Password)
 
 
@@ -104,19 +93,22 @@ func Signinuser_post() gin.HandlerFunc{
 		
 		// var email = user.Email
 		fmt.Println(user.Password)
-		var oldpass = user.Password
+		//entered password
+		var enteredpass = user.Password
 
 	
 		fmt.Println(user)
 
 		
-
-		var res = CheckPasswordHash(oldpass, newpass)
+		//check is entered password is the same as the saved hashed password 
+		//if true returns true 
+		var res = CheckPasswordHash(enteredpass, savedhashedpass)
 		
 		fmt.Println(res)
 
 
-
+		//if the passwords match return user information 
+		//if false return message
 		if res {
 			c.JSON(200, gin.H{"status success" : map[string]string{
 				"first name": userpp[0].FirstName ,

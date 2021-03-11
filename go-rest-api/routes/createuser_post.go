@@ -5,13 +5,13 @@ import (
 	"context"
 	
 	"time"
-	"log"
+	// "log"
 "github.com/gin-gonic/gin"
 "golang.org/x/crypto/bcrypt"
 "go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	// "go.mongodb.org/mongo-driver/bson"
+	// "go.mongodb.org/mongo-driver/mongo/options"
+	// "go.mongodb.org/mongo-driver/mongo/readpref"
 	
 
 )
@@ -26,39 +26,22 @@ type Profile struct {
 	Admin bool `form:"admin" json:"admin" bson:"admin"`
   
 }
-
+//hashing a password with bcrypt
 func HashPassword(password string) (string, error) {
     bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
     return string(bytes), err
 }
 
+//checking a hashed password vs unhashed to see if its the same 
+//returns true if it is 
 func CheckPasswordHash(password, hash string) bool {
     err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
     return err == nil
 }
 
-var client *mongo.Client
-
-func Createuser_post() gin.HandlerFunc{
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(
-	   "mongodb+srv://HUNGRY2021:HUNGRY2021@cluster0.ntcly.mongodb.net/Cluster0?retryWrites=true&w=majority",
-	))
-	if err != nil { log.Fatal(err) }
-	
-	err=client.Ping(ctx,readpref.Primary() )
-	fmt.Println("db connected in Create ")
-	databases, err:= client.ListDatabaseNames(ctx, bson.M{})
-	
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("inside create****",databases)
 
 
-
+func Createuser_post(DB *mongo.Client, ctx context.Context, err error) gin.HandlerFunc{
 
 
 	// with the anon function dependencies can be passed and parameters 
@@ -68,30 +51,30 @@ func Createuser_post() gin.HandlerFunc{
 		// Get the user fields from the request and bind them to a user struct
 		var profile Profile
 		
+		//binds request body to strcut 
 		c.BindJSON(&profile)
 		
 	
 		fmt.Println(profile.Password)
+		//hash password 
 		newpass, err := HashPassword(profile.Password)
 		fmt.Println(newpass, err)
+		//set password in struct to the hashed password
 		profile.Password = newpass
 		fmt.Println(profile)
 
-		collection := client.Database("HUNGRY").Collection(profile.Email)
-
+		//create a collection with he email as the name 
+		collection := DB.Database("HUNGRY").Collection(profile.Email)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+		//insert profile data into collection 
 		result, err := collection.InsertOne(ctx, profile)
 
-		fmt.Println(result)
+		fmt.Println("added to db res",result)
 
 	
-        c.JSON(200, gin.H{"status create": profile}) // Your custom response here
+        c.JSON(201, gin.H{"status create": "done"}) // Your custom response here
 
-
-	// c.JSON(http.StatusOK, map[string]string{
-	// 	"post": "post got",
-	// })
 
 	}
 }

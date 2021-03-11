@@ -7,17 +7,18 @@ import {
   Link
 } from "react-router-dom";
 
+import CreateForm from './components/CreateForm'
+import LoginForm from './components/LoginForm'
 function App() {
   return (
   <Router>
 
     
-    <Link to="/login"><h1>Log in</h1></Link>
+    <Link to="/login"><h6>Log in</h6></Link>
+    <Link  to="/signup"><h6>Sign Up</h6></Link>
 
-    <Link  to="/signup"><h1>Sign Up</h1></Link>
-
-    <Link  to="/"><h1>HOME</h1></Link>
-    <Link  to="/admin"><h1>Admin Only</h1></Link>
+    <Link  to="/"><h6>HOME</h6></Link>
+    <Link  to="/admin"><h6>Admin Only</h6></Link>
 
 
 
@@ -26,11 +27,11 @@ function App() {
           </Route>
 
       <Route exact path="/login">
-            <h1>Log in page Here</h1>
+            <LoginForm/>
           </Route>
 
       <Route exact path="/signup">
-           <h1>Sign up page here</h1>
+           <CreateForm/>
           </Route>
 
       <Route exact path="/">
