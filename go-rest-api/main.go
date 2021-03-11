@@ -12,9 +12,11 @@ import ("fmt"
 	// "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	// "go.mongodb.org/mongo-driver/mongo/readpref"
+	
 
 )
 var DB *mongo.Client
+
 
 func main(){
 fmt.Println("working !!!!!")
@@ -33,7 +35,7 @@ r := gin.Default()
 r.Use(cors.Default())//allow all cors
 	
 	r.GET("/working",  routes.Working_get(DB,ctx,err))
-	r.GET("/admin",  routes.Admin_get())
+	r.POST("/admin",  routes.Admin_get())
 	r.POST("/createuser", routes.Createuser_post(DB,ctx,err))
 	r.POST("/login", routes.Signinuser_post(DB,ctx,err))
 	

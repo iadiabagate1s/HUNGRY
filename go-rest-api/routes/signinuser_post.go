@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"context"
 	"reflect"
+	"net/http"
 	"time"
 	"log"
 "github.com/gin-gonic/gin"
@@ -12,6 +13,9 @@ import (
 	// "go.mongodb.org/mongo-driver/mongo/options"
 	// "go.mongodb.org/mongo-driver/mongo/readpref"
 	// "golang.org/x/crypto/bcrypt"
+
+	"github.com/dgrijalva/jwt-go"
+	"os"
 
 )
 
@@ -41,6 +45,23 @@ type UserRes struct {
   
 }
 
+func CreateToken(userid,name string, isadmin bool) (string, error) {
+	var err error
+	//Creating Access Token
+	atClaims := jwt.MapClaims{}
+	atClaims["authorized"] = true
+	atClaims["user_id"] = userid
+	atClaims["name"] = name
+	atClaims["admin"] = isadmin
+	atClaims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	token, err := at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
+	if err != nil {
+	   return "", err
+	}
+	return token, nil
+  }
+
 
 
 
@@ -58,7 +79,10 @@ func Signinuser_post(DB *mongo.Client, ctx context.Context, err error) gin.Handl
 
 		// Get the user fields from the request and bind them to a user struct
 		var user User
-		c.BindJSON(&user)
+		if err := c.ShouldBindJSON(&user); err != nil {
+			c.JSON(http.StatusUnprocessableEntity, "Invalid json provided")
+			return
+		 }
 		//create a slice of user profile
 		var userpp []UserProfile
 
@@ -110,16 +134,20 @@ func Signinuser_post(DB *mongo.Client, ctx context.Context, err error) gin.Handl
 		//if the passwords match return user information 
 		//if false return message
 		if res {
-			c.JSON(200, gin.H{"status success" : map[string]string{
+			token, err := CreateToken(user.Email,userpp[0].FirstName,userpp[0].Admin)
+  			if err != nil {
+     		c.JSON(http.StatusUnprocessableEntity, err.Error())
+     		return
+  				}
+			c.JSON(200, gin.H{"success" : map[string]string{
 				"first name": userpp[0].FirstName ,
 				"last name": userpp[0].LastName,
 				"email": userpp[0].Email,
+				"token": token,
 		} })// Your custom response here
 		}else {
-			c.JSON(200, gin.H{"status failed" : map[string]string{
-					"worked": "false" ,
-					"message": "incorect email or password",
-			} })
+		
+			c.JSON(http.StatusUnauthorized, "Please provide valid login details")
 		}
 
 	// c.JSON(http.StatusOK, map[string]string{

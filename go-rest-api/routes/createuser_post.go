@@ -3,7 +3,7 @@ package routes
 import (
 	"fmt"
 	"context"
-	
+	"net/http"
 	"time"
 	// "log"
 "github.com/gin-gonic/gin"
@@ -52,7 +52,11 @@ func Createuser_post(DB *mongo.Client, ctx context.Context, err error) gin.Handl
 		var profile Profile
 		
 		//binds request body to strcut 
-		c.BindJSON(&profile)
+		// c.BindJSON(&profile)
+		if err := c.ShouldBindJSON(&profile); err != nil {
+			c.JSON(http.StatusUnprocessableEntity, "Invalid json provided")
+			return
+		 }
 		
 	
 		fmt.Println(profile.Password)
